@@ -1,0 +1,53 @@
+server:
+  port: 8080
+
+uri:
+  prefix: /api/v1
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+services:
+  person:
+    name: service-person
+  qr:
+    name: service-qr
+  medical:
+    name: service-medical
+
+spring:
+  application:
+    name: service-gateway
+    zipkin:
+      base-url: http://localhost:9411/
+  cloud:
+    gateway:
+      routes:
+        - id: ${spring.application.name}
+          uri: lb://${spring.application.name}
+          predicates:
+            - Path=${uri.prefix}/info/**
+          filters:
+            - RewritePath=${uri.prefix}(?<segment>/?.*), $\{segment}
+        - id: ${services.person.name}
+          uri: lb://${services.person.name}
+          predicates:
+            - Path=${uri.prefix}/person/**
+          filters:
+            - RewritePath=${uri.prefix}(?<segment>/?.*), $\{segment}
+        - id: ${services.qr.name}
+          uri: lb://${services.qr.name}
+          predicates:
+            - Path=${uri.prefix}/qr/**
+          filters:
+            - RewritePath=${uri.prefix}(?<segment>/?.*), $\{segment}
+        - id: ${services.medical.name}
+          uri: lb://${services.medical.name}
+          predicates:
+            - Path=${uri.prefix}/medical/**
+          filters:
+            - RewritePath=${uri.prefix}/medical(?<segment>.*), /vaccination/$\{segment}

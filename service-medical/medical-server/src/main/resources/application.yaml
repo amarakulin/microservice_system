@@ -1,0 +1,37 @@
+server:
+  port: 8010
+
+spring:
+  application:
+    name: service-medical
+  liquibase:
+    enabled: true
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5431/medicine
+    username: medical
+    password: medical-password
+  zipkin:
+    base-url: http://localhost:9411/
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+feign:
+  circuitbreaker:
+    enabled: true
+
+kafka:
+  address: http://localhost:9093
+  topic:
+    qr: qr_code
+
+scheduler:
+  send_qr_code:
+    milliseconds: 5000
+  initial_delay:
+    milliseconds: 5000

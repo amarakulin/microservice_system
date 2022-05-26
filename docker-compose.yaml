@@ -1,0 +1,124 @@
+version: '3'
+services:
+  service-registry:
+    container_name: service-registry
+    image: service-registry
+    build: ./service-registry
+    restart: always
+    ports:
+      - "8761:8761"
+
+  service-gateway:
+    container_name: service-gateway
+    image: service-gateway
+    build: ./service-gateway
+    restart: always
+    ports:
+      - "8080:8080"
+
+  service-medical:
+    container_name: service-medical
+    image: service-medical
+    build: ./service-medical
+    restart: always
+    depends_on:
+      - medical-db
+      - kafka
+    ports:
+      - "8010:8010"
+
+  service-person:
+    container_name: service-person
+    image: service-person
+    build: ./service-person
+    restart: always
+    depends_on:
+      - person-db
+    ports:
+      - "8020:8020"
+
+  service-qr:
+    container_name: service-qr
+    image: service-qr
+    build: ./service-qr
+    restart: always
+    depends_on:
+      - qr-db
+      - service-medical
+    ports:
+      - "8030:8030"
+
+  medical-db:
+    container_name: medical-db
+    image: postgres:10
+    ports:
+      - "5431:5432"
+    environment:
+      - POSTGRES_PASSWORD=medical-password
+      - POSTGRES_USER=medical
+      - POSTGRES_DB=medicine
+    volumes:
+      - ./../docker_volumes_medical/db:/var/lib/postgresql/data
+
+  person-db:
+    container_name: person-db
+    image: postgres:10
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=person-password
+      - POSTGRES_USER=person
+      - POSTGRES_DB=people
+    volumes:
+      - ./../docker_volumes_person/db:/var/lib/postgresql/data
+
+  qr-db:
+    container_name: qr-db
+    image: postgres:10
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_PASSWORD=qr-code-password
+      - POSTGRES_USER=qr-code-username
+      - POSTGRES_DB=qr-codes
+    volumes:
+      - ./../docker_volumes_qr/db:/var/lib/postgresql/data
+
+  zipkin:
+    container_name: zipkin
+    image: openzipkin/zipkin
+    ports:
+      - "9411:9411"
+
+  zookeeper:
+    image: docker.io/bitnami/zookeeper:3.8
+    ports:
+      - "2181:2181"
+    volumes:
+      - "zookeeper_data:/bitnami"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    image: docker.io/bitnami/kafka:3.1
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    volumes:
+      - "kafka_data:/bitnami"
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+    depends_on:
+      - zookeeper
+
+volumes:
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local
